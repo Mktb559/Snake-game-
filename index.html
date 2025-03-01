@@ -18,15 +18,11 @@
 
         .game-container {
             text-align: center;
-            max-width: 100%;
-            overflow: hidden;
         }
 
         #game-board {
             border: 1px solid #fff;
             background-color: #000;
-            max-width: 100%;
-            touch-action: none; /* Hindari scroll saat menggunakan joystick */
         }
 
         #score, #high-score {
@@ -41,45 +37,39 @@
             cursor: pointer;
         }
 
-        input[type="color"] {
-            margin-top: 10px;
-            padding: 5px;
-            cursor: pointer;
-        }
-
-        /* Styling untuk joystick */
-        .joystick-container {
+        /* Styling untuk tombol kontrol mobile */
+        .mobile-controls {
             display: none; /* Sembunyikan secara default */
-            position: relative;
-            width: 100px;
-            height: 100px;
+            grid-template-areas:
+                ". up ."
+                "left down right";
+            gap: 10px;
             margin-top: 20px;
         }
 
-        .joystick {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background-color: rgba(255, 255, 255, 0.5);
+        .mobile-controls button {
+            background-color: #333;
+            border: none;
+            color: #fff;
+            padding: 20px;
+            font-size: 24px;
             border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            touch-action: none; /* Hindari scroll saat menggunakan joystick */
+            cursor: pointer;
         }
 
-        /* Tampilkan joystick hanya di perangkat mobile */
+        .mobile-controls button:active {
+            background-color: #555;
+        }
+
+        #up { grid-area: up; }
+        #left { grid-area: left; }
+        #down { grid-area: down; }
+        #right { grid-area: right; }
+
+        /* Tampilkan tombol kontrol hanya di perangkat mobile */
         @media (max-width: 600px) {
-            .joystick-container {
-                display: block; /* Tampilkan joystick di mobile */
-            }
-            .game-container {
-                width: 100%;
-                padding: 10px;
-            }
-            #game-board {
-                width: 90vw; /* Sesuaikan ukuran canvas dengan layar mobile */
-                height: 90vw;
+            .mobile-controls {
+                display: grid; /* Tampilkan tombol kontrol di mobile */
             }
         }
     </style>
@@ -94,11 +84,13 @@
         <button onclick="setDifficulty('hard')">Hard</button>
         <button onclick="togglePause()">Pause/Resume</button>
         <button onclick="toggleFullscreen()">Fullscreen</button>
-        <input type="color" id="snake-color" onchange="changeSnakeColor(this.value)" value="#00ff00">
 
-        <!-- Joystick untuk mobile control -->
-        <div class="joystick-container">
-            <div class="joystick" id="joystick"></div>
+        <!-- Tombol kontrol untuk mobile -->
+        <div class="mobile-controls" id="mobile-controls">
+            <button id="up" onclick="moveUp()">⬆️</button>
+            <button id="left" onclick="moveLeft()">⬅️</button>
+            <button id="down" onclick="moveDown()">⬇️</button>
+            <button id="right" onclick="moveRight()">➡️</button>
         </div>
     </div>
 
@@ -110,22 +102,10 @@
         let snake = [{ x: 10, y: 10 }]; // Koordinat awal ular
         let direction = { x: 0, y: 0 };
         let food = { x: 5, y: 5 };
-        let powerUp = null; // Power-up (boost)
         let score = 0;
         let highScore = localStorage.getItem("highScore") || 0;
         let speed = 100; // Kecepatan normal
         let isPaused = false;
-        let snakeColor = "#00ff00"; // Warna default ular (hijau)
-        let isBoostActive = false; // Status boost
-
-        // Sesuaikan ukuran canvas dengan layar
-        function resizeCanvas() {
-            const size = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.6);
-            canvas.width = size;
-            canvas.height = size;
-        }
-        window.addEventListener("resize", resizeCanvas);
-        resizeCanvas();
 
         document.getElementById("high-score").innerText = "High Score: " + highScore;
 
@@ -164,16 +144,7 @@
                     localStorage.setItem("highScore", highScore);
                     document.getElementById("high-score").innerText = "High Score: " + highScore;
                 }
-            }
-
-            // Check if snake eats power-up
-            if (powerUp && head.x === powerUp.x && head.y === powerUp.y) {
-                activateBoost(); // Aktifkan boost
-                powerUp = null; // Hapus power-up dari papan
-            }
-
-            // Jika tidak makan, kurangi panjang ular
-            if (head.x !== food.x || head.y !== food.y) {
+            } else {
                 snake.pop();
             }
         }
@@ -183,29 +154,12 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Draw snake
-            ctx.fillStyle = snakeColor; // Gunakan warna ular yang dipilih
-            snake.forEach(segment => {
-                const x = (segment.x / tileCount) * canvas.width;
-                const y = (segment.y / tileCount) * canvas.height;
-                const size = canvas.width / tileCount;
-                ctx.fillRect(x, y, size, size);
-            });
+            ctx.fillStyle = "lime"; // Warna ular
+            snake.forEach(segment => ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize));
 
             // Draw food
             ctx.fillStyle = "red"; // Warna makanan
-            const foodX = (food.x / tileCount) * canvas.width;
-            const foodY = (food.y / tileCount) * canvas.height;
-            const foodSize = canvas.width / tileCount;
-            ctx.fillRect(foodX, foodY, foodSize, foodSize);
-
-            // Draw power-up (boost)
-            if (powerUp) {
-                ctx.fillStyle = "blue"; // Warna power-up
-                const powerUpX = (powerUp.x / tileCount) * canvas.width;
-                const powerUpY = (powerUp.y / tileCount) * canvas.height;
-                const powerUpSize = canvas.width / tileCount;
-                ctx.fillRect(powerUpX, powerUpY, powerUpSize, powerUpSize);
-            }
+            ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
         }
 
         function placeFood() {
@@ -216,29 +170,6 @@
             if (snake.some(segment => segment.x === food.x && segment.y === food.y)) {
                 placeFood();
             }
-
-            // Randomly place power-up (10% chance)
-            if (Math.random() < 0.1) {
-                powerUp = {
-                    x: Math.floor(Math.random() * tileCount),
-                    y: Math.floor(Math.random() * tileCount)
-                };
-                // Pastikan power-up tidak muncul di atas ular atau makanan
-                if (snake.some(segment => segment.x === powerUp.x && segment.y === powerUp.y)) {
-                    powerUp = null;
-                    placeFood();
-                }
-            }
-        }
-
-        function activateBoost() {
-            if (isBoostActive) return; // Jika boost sudah aktif, jangan aktifkan lagi
-            isBoostActive = true;
-            speed = 50; // Kecepatan boost (lebih cepat)
-            setTimeout(() => {
-                speed = 100; // Kembalikan ke kecepatan normal setelah 5 detik
-                isBoostActive = false;
-            }, 5000); // Boost aktif selama 5 detik
         }
 
         function resetGame() {
@@ -247,8 +178,6 @@
             score = 0;
             document.getElementById("score").innerText = "Score: " + score;
             placeFood();
-            isBoostActive = false; // Reset status boost
-            speed = 100; // Kembalikan ke kecepatan normal
         }
 
         function setDifficulty(level) {
@@ -269,56 +198,18 @@
             }
         }
 
-        function changeSnakeColor(color) {
-            snakeColor = color; // Update warna ular
+        // Fungsi untuk tombol kontrol mobile
+        function moveUp() {
+            if (direction.y === 0) direction = { x: 0, y: -1 };
         }
-
-        // Joystick logic
-        const joystick = document.getElementById("joystick");
-        const joystickContainer = document.querySelector(".joystick-container");
-        let isJoystickActive = false;
-
-        joystick.addEventListener("touchstart", (e) => {
-            isJoystickActive = true;
-            updateJoystick(e);
-        });
-
-        joystick.addEventListener("touchmove", (e) => {
-            if (isJoystickActive) {
-                updateJoystick(e);
-            }
-        });
-
-        joystick.addEventListener("touchend", () => {
-            isJoystickActive = false;
-            direction = { x: 0, y: 0 }; // Reset arah saat joystick dilepas
-            joystick.style.transform = "translate(-50%, -50%)"; // Kembalikan joystick ke posisi tengah
-        });
-
-        function updateJoystick(e) {
-            const touch = e.touches[0];
-            const rect = joystickContainer.getBoundingClientRect();
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            const touchX = touch.clientX - rect.left;
-            const touchY = touch.clientY - rect.top;
-
-            const deltaX = touchX - centerX;
-            const deltaY = touchY - centerY;
-            const angle = Math.atan2(deltaY, deltaX);
-            const distance = Math.min(Math.hypot(deltaX, deltaY), 50); // Batasi jarak joystick
-
-            // Update posisi joystick
-            joystick.style.transform = `translate(${distance * Math.cos(angle)}px, ${distance * Math.sin(angle)}px)`;
-
-            // Update arah ular berdasarkan joystick
-            if (distance > 10) { // Hanya update arah jika joystick digerakkan cukup jauh
-                if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                    direction = { x: Math.sign(deltaX), y: 0 }; // Gerak horizontal
-                } else {
-                    direction = { x: 0, y: Math.sign(deltaY) }; // Gerak vertikal
-                }
-            }
+        function moveDown() {
+            if (direction.y === 0) direction = { x: 0, y: 1 };
+        }
+        function moveLeft() {
+            if (direction.x === 0) direction = { x: -1, y: 0 };
+        }
+        function moveRight() {
+            if (direction.x === 0) direction = { x: 1, y: 0 };
         }
 
         window.addEventListener("keydown", e => {
@@ -338,6 +229,8 @@
             }
         });
 
+        canvas.width = gridSize * tileCount;
+        canvas.height = gridSize * tileCount;
         placeFood();
         gameLoop();
     </script>
