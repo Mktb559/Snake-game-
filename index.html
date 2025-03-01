@@ -66,10 +66,10 @@
         #down { grid-area: down; }
         #right { grid-area: right; }
 
-        /* Tampilkan tombol kontrol hanya di perangkat mobile */
+        /* Tampilkan tombol "Show Controls" hanya di perangkat mobile */
         @media (max-width: 600px) {
-            .mobile-controls {
-                display: grid; /* Tampilkan tombol kontrol di mobile */
+            .show-controls-button {
+                display: block; /* Tampilkan tombol "Show Controls" di mobile */
             }
         }
     </style>
@@ -84,6 +84,9 @@
         <button onclick="setDifficulty('hard')">Hard</button>
         <button onclick="togglePause()">Pause/Resume</button>
         <button onclick="toggleFullscreen()">Fullscreen</button>
+
+        <!-- Tombol "Show Controls" -->
+        <button class="show-controls-button" onclick="toggleControls()">Show Controls</button>
 
         <!-- Tombol kontrol untuk mobile -->
         <div class="mobile-controls" id="mobile-controls">
@@ -210,6 +213,19 @@
         }
         function moveRight() {
             if (direction.x === 0) direction = { x: 1, y: 0 };
+        }
+
+        // Fungsi untuk menampilkan/sembunyikan tombol kontrol
+        function toggleControls() {
+            const controls = document.getElementById("mobile-controls");
+            const showControlsButton = document.querySelector(".show-controls-button");
+            if (controls.style.display === "none" || controls.style.display === "") {
+                controls.style.display = "grid"; // Tampilkan tombol kontrol
+                showControlsButton.textContent = "Hide Controls"; // Ubah teks tombol
+            } else {
+                controls.style.display = "none"; // Sembunyikan tombol kontrol
+                showControlsButton.textContent = "Show Controls"; // Ubah teks tombol
+            }
         }
 
         window.addEventListener("keydown", e => {
